@@ -1,6 +1,7 @@
 from mongoengine import Document, StringField, DateTimeField, FloatField, BooleanField
 import datetime
 
+
 class Task(Document):
     # Core Data
     title = StringField(required=True, max_length=200)
