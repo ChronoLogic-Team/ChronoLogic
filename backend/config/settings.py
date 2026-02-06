@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%wm-0$z+yy1!y#!gjx$(#_=f-hd9(05kib7!x-@^6*972x)9mv'
+SECRET_KEY = 'django-insecure-!ow%-*t&2iqy=6opjoutnlg!c&edd8%usj!w=!nvm-qhptjx91'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -29,7 +29,6 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -37,8 +36,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
+    
     'api',
+    'rest_framework'
 ]
 
 MIDDLEWARE = [
@@ -77,7 +77,6 @@ WSGI_APPLICATION = 'config.wsgi.application'
 import mongoengine
 
 # Connect to MongoDB
-# This will automatically create a database named 'chronologic_db'
 mongoengine.connect(
     db='chronologic_db',
     host='localhost',
@@ -120,3 +119,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
