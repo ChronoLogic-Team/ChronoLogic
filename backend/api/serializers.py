@@ -5,6 +5,3 @@ class TaskSerializer(serializers.DocumentSerializer):
     class Meta:
         model = Task 
         fields = '__all__'
-    
-
-

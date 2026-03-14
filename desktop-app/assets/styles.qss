@@ -1,0 +1,181 @@
+/* Global Styles */
+QWidget {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+    color: #333333;
+}
+
+QMainWindow, QWidget#centralwidget {
+    background-color: #F4F5F7;
+}
+
+/* Sidebar */
+QWidget#Sidebar {
+    background-color: #FFFFFF;
+    border-right: 1px solid #E0E0E0;
+}
+
+QPushButton#SidebarButton {
+    text-align: left;
+    padding: 12px 20px;
+    border: none;
+    background-color: transparent;
+    color: #666666;
+    font-weight: 600;
+    border-radius: 10px;
+    margin: 4px 15px;
+    font-size: 14px;
+}
+
+QPushButton#SidebarButton:hover {
+    background-color: #F0F0FA;
+    color: #5A4AD1;
+}
+
+QPushButton#SidebarButton:checked {
+    background-color: #5A4AD1;
+    color: #FFFFFF;
+    font-weight: bold;
+}
+
+QLabel#SidebarSectionHeader {
+    color: #A0A0A0;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 25px 20px 10px 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Top Bar */
+QLineEdit#SearchInput {
+    background-color: #FFFFFF;
+    border: 1px solid #E0E0E0;
+    border-radius: 20px;
+    padding: 10px 20px;
+    min-width: 300px;
+    color: #333333;
+    font-size: 13px;
+}
+
+QPushButton#NewTaskButton {
+    background-color: #5A4AD1;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 25px;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+QPushButton#NewTaskButton:hover {
+    background-color: #4839B0;
+}
+
+QPushButton#IconButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+QPushButton#IconButton:hover {
+    background-color: #E5E5E5;
+}
+
+/* Base Card Style */
+QFrame#ContentCard, QFrame#TeamCard, QFrame#StatsCard {
+    background-color: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid #EDEDED;
+}
+
+QLabel#StatsValue {
+    font-size: 32px;
+    font-weight: 800;
+    color: #2C3E50;
+}
+
+QLabel#StatsTitle {
+    color: #95A5A6;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Dashboard Specifics */
+QFrame#OnTrackCard {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #5A4AD1, stop:1 #8E44AD);
+    border-radius: 16px;
+    border: none;
+}
+
+QLabel#CardTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: #2C3E50;
+    margin-bottom: 20px;
+}
+
+QFrame#BarChartBar {
+    background-color: #6C5CE7;
+    border-radius: 6px;
+}
+
+QLabel#ChartLabel {
+    color: #B2BEC3;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Timeline View */
+QTableWidget {
+    background-color: white;
+    border: none;
+    gridline-color: #F0F0F0;
+    selection-background-color: transparent; /* Disable row selection color for cleaner look */
+    selection-color: #333;
+    outline: none;
+}
+
+QHeaderView::section {
+    background-color: #FAFAFA; /* Lighter header */
+    border: none;
+    border-bottom: 2px solid #E0E0E0;
+    padding: 15px 10px;
+    color: #95A5A6;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+/* Timeline Custom Widgets */
+QWidget#TaskInfoWidget {
+    background-color: transparent;
+}
+
+QFrame#TimelineBar { /* Targeting the inner bar if I set object name */
+    border-radius: 6px;
+}
+
+/* Logic Flow */
+QFrame#DashedContainer {
+    background-color: #FAFAFA;
+    border: 2px dashed #CBD5E0;
+    border-radius: 20px;
+}
+
+QPushButton#PrimaryButton {
+    background-color: #5A4AD1;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 30px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+QPushButton#PrimaryButton:hover {
+    background-color: #4839B0;
+}
