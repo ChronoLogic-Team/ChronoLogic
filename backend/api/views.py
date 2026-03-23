@@ -8,10 +8,32 @@ import datetime
 from django.conf import settings
 from .serializers import TaskSerializer
 from .models import Task, AbstractBaseUser
+from .authentication import MongoJWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+
+from rest_framework.permissions import BasePermission
+
+class IsMongoAuthenticated(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user:
+            return False
+            
+        is_anon = getattr(request.user, 'is_anonymous', False)
+        return not is_anon
 
 class TaskViewSet(viewsets.ModelViewSet):
-    queryset = Task.objects.all()
     serializer_class = TaskSerializer
+    authentication_classes = [MongoJWTAuthentication]
+    permission_classes = [IsMongoAuthenticated] 
+    
+    def get_queryset(self):
+        # THE FIX: Safely check for the nametag without crashing
+        is_anon = getattr(self.request.user, 'is_anonymous', False)
+        
+        if is_anon:
+            return Task.objects.none()
+            
+        return Task.objects.filter(owner=self.request.user)
 
 class RegisterView(APIView):
     def post(self, request):

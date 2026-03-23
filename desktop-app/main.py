@@ -17,7 +17,7 @@ class AppController:
     def show_main_window(self):
         self.login_window.close()
         # Initialize MainWindow only after successful login
-        self.main_window = MainWindow()
+        self.main_window = MainWindow(api_client=self.api_client)
         self.main_window.show()
 
 def main():

@@ -14,7 +14,7 @@ from ui.views.team_page import TeamPage
 from services.api_client import APIClient
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, api_client): 
         super().__init__()
         self.setWindowTitle("ChronoLogic")
         self.setGeometry(100, 100, 1280, 800)
@@ -22,14 +22,13 @@ class MainWindow(QMainWindow):
         self.load_styles()
         self.setup_ui()
         
-        self.api_client = APIClient()
+        self.api_client = api_client 
         self.api_client.tasks_fetched.connect(self.on_tasks_fetched)
         self.api_client.error_occurred.connect(self.on_api_error)
         self.api_client.task_created.connect(self.on_task_created)
         self.api_client.task_updated.connect(self.on_task_updated)
         self.api_client.fetch_tasks()
         
-        # Connect Timeline drag and drop
         if hasattr(self.timeline_page, 'timeline_view'):
             self.timeline_page.timeline_view.task_rescheduled.connect(self.on_task_rescheduled)
 

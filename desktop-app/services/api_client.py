@@ -106,6 +106,10 @@ class APIClient(QObject):
         headers = {'Content-Type': 'application/json'}
         if self.access_token:
             headers['Authorization'] = f'Bearer {self.access_token}'
+            
+        # X-RAY 2: Let's see what we are packing before we send it
+        print(f"3. Packing headers for request: {headers}")
+        
         return headers
         
     # NEW: Method called by LoginWindow to start the Login process
@@ -116,8 +120,19 @@ class APIClient(QObject):
 
     # NEW: Method called when Login finishes. Saves the token!
     def _on_login_finished(self, data, error):
+        # 1. Did the server crash or send a hard error?
         if error:
             self.login_failed.emit(error)
+            
+        # 2. Did the server send an error message inside the data?
+        elif 'error' in data:
+            self.login_failed.emit(data['error'])
+            
+        # 3. Did we somehow not get a token?
+        elif not data.get('token'):
+            self.login_failed.emit("Login failed: No token received.")
+            
+        # 4. Success! We have a real token.
         else:
             self.access_token = data.get('token')
             self.login_successful.emit(data)
