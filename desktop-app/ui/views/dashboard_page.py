@@ -204,7 +204,7 @@ class DashboardPage(QWidget):
         for task in sorted_tasks:
             title = task.get("title", "Unknown")
             try:
-                deadline_dt = datetime.fromisoformat(task.get("deadline", "").replace("Z", "+00:00"))
+                deadline_dt = datetime.fromisoformat(task.get("dead_line", "").replace("Z", "+00:00"))
                 time_str = deadline_dt.strftime("%H:%M")
             except:
                 time_str = "--:--"

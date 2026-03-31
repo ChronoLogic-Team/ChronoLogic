@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QFrame, QHBoxLayout, QSpacerItem, QSizePolicy
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout
 from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor
 from PyQt6.QtCore import Qt, QSize
 
@@ -19,7 +19,7 @@ class Sidebar(QWidget):
         logo_layout = QHBoxLayout(logo_container)
         logo_layout.setContentsMargins(20, 25, 20, 25)
         
-        logo_icon = QLabel("C") # Placeholder or use actual icon
+        logo_icon = QLabel("C")
         logo_icon.setStyleSheet("background-color: #5A4AD1; color: white; border-radius: 8px; font-weight: bold; font-size: 18px; padding: 5px 10px;")
         logo_text = QLabel("ChronoLogic")
         logo_text.setStyleSheet("font-size: 18px; font-weight: bold; color: #333; margin-left: 8px;")
@@ -29,16 +29,14 @@ class Sidebar(QWidget):
         logo_layout.addStretch()
         layout.addWidget(logo_container)
 
-        # 2. Main Navigation
+        # 2. Main Navigation (Cleaned up!)
         self.add_nav_button(layout, "Dashboard", "assets/icons/dashboard.svg", checked=True)
         self.add_nav_button(layout, "Timeline", "assets/icons/timeline.svg")
-        self.add_nav_button(layout, "Logic Flow", "assets/icons/logic.svg")
-        self.add_nav_button(layout, "Team", "assets/icons/team.svg")
 
         layout.addSpacing(20)
 
-        # 3. "MY PROJECTS" Section
-        projects_label = QLabel("MY PROJECTS")
+        # 3. "MY WORKSPACES" Section
+        projects_label = QLabel("MY WORKSPACES")
         projects_label.setStyleSheet("""
             color: #9CA3AF;
             font-size: 11px;
@@ -48,9 +46,8 @@ class Sidebar(QWidget):
         """)
         layout.addWidget(projects_label)
 
-        self.add_project_item(layout, "Q1 Product Launch", "#5A4AD1")
-        self.add_project_item(layout, "Market Research", "#2ECC71")
-        self.add_project_item(layout, "Brand Refresh", "#F1C40F")
+        self.add_project_item(layout, "Primary AI Engine", "#5A4AD1")
+        self.add_project_item(layout, "University Thesis", "#2ECC71")
 
         layout.addStretch()
 
@@ -60,9 +57,6 @@ class Sidebar(QWidget):
         btn.setCheckable(True)
         btn.setChecked(checked)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        # TODO: Add icon support when assets are available
-        # btn.setIcon(QIcon(icon_path))
-        # btn.setIconSize(QSize(20, 20))
         layout.addWidget(btn)
 
     def add_project_item(self, layout, text, color_hex):
@@ -82,7 +76,6 @@ class Sidebar(QWidget):
         btn.setIconSize(QSize(size, size))
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
         
-        # Elegant styling aligned with modern UI trends
         btn.setStyleSheet(f"""
             QPushButton {{
                 text-align: left;
@@ -96,7 +89,7 @@ class Sidebar(QWidget):
                 border: none;
             }}
             QPushButton:hover {{
-                background-color: {color_hex}1A; /* 10% opacity tint */
+                background-color: {color_hex}1A;
                 color: #111827;
             }}
         """)

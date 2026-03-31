@@ -81,15 +81,15 @@ class TimelineBarWidget(QWidget):
         
         self.bar = QFrame()
         self.bar.setFixedHeight(24) 
-        self.bar.setStyleSheet(f"""
+        self.bar.setStyleSheet(self.bar.setStyleSheet(f"""
             QFrame {{
                 background-color: {color}; 
                 border-radius: 12px;
             }}
             QFrame:hover {{
-                background-color: {color}dd; 
+                background-color: rgba(90, 74, 209, 0.8); /* Use a safe rgba color for hover */
             }}
-        """)
+        """))
         
         from PyQt6.QtWidgets import QGraphicsDropShadowEffect
         shadow = QGraphicsDropShadowEffect()
@@ -360,20 +360,28 @@ class TimelineView(QWidget):
             self.table.setCellWidget(i, 0, info_widget)
             
             # Parse deadline for start position mapping (Mock mapping for now)
+            # Parse deadline for start position mapping 
             try:
-                deadline = datetime.fromisoformat(task.get("deadline", "").replace('Z', '+00:00'))
+                # FIX 1: Changed "deadline" to "dead_line" to match database
+                deadline_str = task.get("dead_line", "")
+                deadline = datetime.fromisoformat(deadline_str.replace('Z', '+00:00'))
                 days_diff = (deadline.date() - self.start_date).days
                 start_day_offset = max(0, days_diff)
-                start_hour = 9 # Mock 9AM default
+                start_hour = deadline.hour # Use the actual hour instead of hardcoded 9AM
             except:
                 start_day_offset = 2
                 start_hour = 9
                 
             duration = int(task.get("estimated_duration", 2))
-            
             start_col = 1 + (start_day_offset * 24) + start_hour
+            
+            # FIX 2: Safely grab the ID (MongoDB uses 'id' or '_id' in the JSON)
+            task_id = str(task.get("id", task.get("_id", i)))
             
             if start_col + duration <= self.table.columnCount():
                 self.table.setSpan(i, start_col, 1, duration)
-                bar_widget = TimelineBarWidget(color + "AA")
+                
+                # FIX 3: Pass all 3 required arguments to the widget!
+                bar_widget = TimelineBarWidget(task_id, color + "AA", duration)
+                
                 self.table.setCellWidget(i, start_col, bar_widget)

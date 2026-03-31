@@ -4,14 +4,10 @@ from PyQt6.QtCore import Qt, QFile, QTextStream
 
 # Import Widgets
 from ui.widgets.sidebar import Sidebar
-from ui.widgets.stats_card import StatsCard
 
 # Import Pages
 from ui.views.dashboard_page import DashboardPage
 from ui.views.timeline_page import TimelinePage
-from ui.views.logic_flow_page import LogicFlowPage
-from ui.views.team_page import TeamPage
-from services.api_client import APIClient
 
 class MainWindow(QMainWindow):
     def __init__(self, api_client): 
@@ -65,13 +61,9 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.dashboard_page = DashboardPage()
         self.timeline_page = TimelinePage()
-        self.logic_page = LogicFlowPage()
-        self.team_page = TeamPage()
         
         self.stack.addWidget(self.dashboard_page) # Index 0
         self.stack.addWidget(self.timeline_page)  # Index 1
-        self.stack.addWidget(self.logic_page)     # Index 2
-        self.stack.addWidget(self.team_page)      # Index 3
         
         content_layout.addWidget(self.stack)
         main_layout.addWidget(content_widget)
@@ -82,14 +74,11 @@ class MainWindow(QMainWindow):
     def create_top_bar(self, layout):
         top_bar = QHBoxLayout()
         
-        page_title = QLabel("Q1 Product Launch")
+        page_title = QLabel("My AI Workspace")
         page_title.setStyleSheet("font-size: 24px; font-weight: bold; color: #333;")
         
-        avatars = QLabel("  Ax  Bx  Cx  +4  ")
-        avatars.setStyleSheet("background-color: #E0E0E0; border-radius: 12px; padding: 5px; color: #555; font-weight: bold; font-size: 11px;")
-        
         search_input = QLineEdit()
-        search_input.setPlaceholderText("Search everything...")
+        search_input.setPlaceholderText("Search tasks...")
         search_input.setObjectName("SearchInput")
         
         notif_btn = QPushButton("🔔")
@@ -101,7 +90,6 @@ class MainWindow(QMainWindow):
         new_task_btn.clicked.connect(self.open_new_task_dialog)
 
         top_bar.addWidget(page_title)
-        top_bar.addWidget(avatars)
         top_bar.addStretch()
         top_bar.addWidget(search_input)
         top_bar.addWidget(notif_btn)
@@ -114,35 +102,29 @@ class MainWindow(QMainWindow):
         
         page_map = {
             "Dashboard": 0,
-            "Timeline": 1,
-            "Logic Flow": 2,
-            "Team": 3
+            "Timeline": 1
         }
         
         for btn in buttons:
             if btn.text() in page_map:
                 index = page_map[btn.text()]
-                # Use lambda with default argument to capture value
                 btn.clicked.connect(lambda checked, idx=index: self.switch_page(idx))
 
     def switch_page(self, index):
         self.stack.setCurrentIndex(index)
         
-        # Update sidebar state (visual only)
         buttons = self.sidebar.findChildren(QPushButton, "SidebarButton")
-        page_map = ["Dashboard", "Timeline", "Logic Flow", "Team"]
+        page_map = ["Dashboard", "Timeline"]
         
         if 0 <= index < len(page_map):
             target_text = page_map[index]
             for btn in buttons:
                 if btn.text() == target_text:
                     btn.setChecked(True)
-                elif btn.text() in page_map: # Only uncheck nav buttons
+                elif btn.text() in page_map: 
                     btn.setChecked(False)
 
     def on_tasks_fetched(self, tasks):
-        # Update children
-        # Dashboard and Timeline will need update_tasks methods
         if hasattr(self.dashboard_page, 'update_tasks'):
             self.dashboard_page.update_tasks(tasks)
         if hasattr(self.timeline_page, 'update_tasks'):
@@ -159,7 +141,6 @@ class MainWindow(QMainWindow):
             self.api_client.create_task(task_data)
             
     def on_task_created(self, task):
-        # Refresh the tasks across the app
         print("Task created successfully:", task.get("title"))
         self.api_client.fetch_tasks()
         
@@ -169,6 +150,4 @@ class MainWindow(QMainWindow):
         
     def on_task_updated(self, task):
         print("Task updated successfully:", task.get("title"))
-        # We could rely on frontend optimistic updates, but fetching 
-        # keeps Dashboard and Timeline perfectly in sync with the DB.
         self.api_client.fetch_tasks()

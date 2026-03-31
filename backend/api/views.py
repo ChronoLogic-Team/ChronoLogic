@@ -34,6 +34,9 @@ class TaskViewSet(viewsets.ModelViewSet):
             return Task.objects.none()
             
         return Task.objects.filter(owner=self.request.user)
+        
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
 class RegisterView(APIView):
     def post(self, request):
