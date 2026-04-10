@@ -38,6 +38,22 @@ class TaskViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+    # THE NEW INTERCEPTOR
+    def perform_update(self, serializer):
+        # Check if the deadline is being changed
+        if 'dead_line' in serializer.validated_data:
+            new_deadline = serializer.validated_data['dead_line']
+            old_deadline = serializer.instance.dead_line
+            
+            # If the dates don't match, they rescheduled it! Add +1.
+            if old_deadline and new_deadline != old_deadline:
+                current_count = getattr(serializer.instance, 'reschedule_count', 0)
+                serializer.save(reschedule_count=current_count + 1)
+                return
+                
+        # Otherwise, just save normally
+        serializer.save()
+
 class RegisterView(APIView):
     def post(self, request):
         email = request.data.get('email')

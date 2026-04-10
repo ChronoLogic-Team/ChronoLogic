@@ -1,7 +1,9 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout, QPushButton, QScrollArea
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 
 class DashboardPage(QWidget):
+    task_edit_requested = pyqtSignal(dict) # THE NEW SIGNAL
+
     def __init__(self):
         super().__init__()
         self.setup_ui()
@@ -222,12 +224,27 @@ class DashboardPage(QWidget):
             lbl.setStyleSheet("font-weight: 600; color: #555; font-size: 13px;")
             time_lbl = QLabel(time_str)
             time_lbl.setStyleSheet("color: #333; font-size: 13px; font-weight: 600;")
+
+            dot = QLabel("●")
+            dot.setStyleSheet(f"color: {color}; font-size: 12px;")
+            lbl = QLabel(title[:20] + ("..." if len(title) > 20 else ""))
+            lbl.setStyleSheet("font-weight: 600; color: #555; font-size: 13px;")
+            time_lbl = QLabel(time_str)
+            time_lbl.setStyleSheet("color: #333; font-size: 13px; font-weight: 600;")
+            
+            # THE NEW EDIT BUTTON
+            edit_btn = QPushButton("✏️")
+            edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            edit_btn.setStyleSheet("background: transparent; border: none; font-size: 14px;")
+            # When clicked, shout to the MainWindow with the task's data!
+            edit_btn.clicked.connect(lambda checked, t=task: self.task_edit_requested.emit(t))
             
             row.addWidget(dot)
             row.addSpacing(10)
             row.addWidget(lbl)
             row.addStretch()
             row.addWidget(time_lbl)
+            row.addWidget(edit_btn) # ADDED TO THE ROW
             
             self.deadlines_layout.addWidget(row_widget)
 

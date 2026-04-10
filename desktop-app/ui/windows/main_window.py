@@ -60,6 +60,11 @@ class MainWindow(QMainWindow):
         # -- Stacked Widget for Pages --
         self.stack = QStackedWidget()
         self.dashboard_page = DashboardPage()
+        
+        # THE FIX: Connect the dashboard's edit signal to the MainWindow!
+        if hasattr(self.dashboard_page, 'task_edit_requested'):
+            self.dashboard_page.task_edit_requested.connect(self.open_edit_task_dialog)
+            
         self.timeline_page = TimelinePage()
         
         self.stack.addWidget(self.dashboard_page) # Index 0
@@ -139,6 +144,16 @@ class MainWindow(QMainWindow):
         if dialog.exec():
             task_data = dialog.get_task_data()
             self.api_client.create_task(task_data)
+            
+    def open_edit_task_dialog(self, task_data):
+        from ui.widgets.new_task_dialog import NewTaskDialog
+        # Pass the task_data to the dialog so it switches to "Edit Mode"
+        dialog = NewTaskDialog(self, task_data=task_data)
+        if dialog.exec():
+            updated_data = dialog.get_task_data()
+            task_id = updated_data.pop("id", None)
+            if task_id:
+                self.api_client.update_task(task_id, updated_data)
             
     def on_task_created(self, task):
         print("Task created successfully:", task.get("title"))

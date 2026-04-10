@@ -1,5 +1,5 @@
 import django.db.models.fields.reverse_related
-from mongoengine import Document, StringField, DateTimeField, FloatField, BooleanField, ReferenceField
+from mongoengine import Document, StringField, DateTimeField, FloatField, BooleanField, ReferenceField, IntField
 import datetime
 
 
@@ -28,7 +28,11 @@ class Task(Document):
     # AI Metadata (For the "Neuro-Symbolic" part)
     ai_confidence_score = FloatField(default=0.0)
 
-    owner = ReferenceField(AbstractBaseUser, required=True, reverse_delete_rule='CASCADE')
+    # AI Metadata (For the "Neuro-Symbolic" part)
+    ai_confidence_score = FloatField(default=0.0)
+    reschedule_count = IntField(default=0) # THE NEW FIELD!
 
+    owner = ReferenceField(AbstractBaseUser, required=True, reverse_delete_rule='CASCADE')
+    
     def __str__(self):
         return self.title
