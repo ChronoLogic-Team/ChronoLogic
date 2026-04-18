@@ -222,3 +222,5 @@ Desktop.ini
 dump/
 mongodump/
 data/db/
+# Virtual Environment
+ChronoVE/
