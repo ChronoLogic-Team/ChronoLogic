@@ -9,22 +9,27 @@ class TaskSerializer(serializers.Serializer):
     # 2. Writable Fields (Data coming from your Desktop App)
     title = serializers.CharField(max_length=200)
     description = serializers.CharField(allow_blank=True, required=False)
-    category = serializers.CharField()
+    # Made these required=False so the AI can freely overwrite them
+    category = serializers.CharField(required=False, allow_blank=True)
     dead_line = serializers.DateTimeField()
-    estimated_duration = serializers.FloatField()
+    estimated_duration = serializers.FloatField(required=False, default=0.0)
     
-    # 3. Default Fields
+    # 3. Status Fields
     is_completed = serializers.BooleanField(default=False)
-    ai_confidence_score = serializers.FloatField(required=False, default=0.0)
+    
+    # --- THE 5-PILLAR NEURO ENGINE METADATA ---
+    # These fields catch the AI's math and send it safely to your UI
+    cognitive_score = serializers.FloatField(required=False, default=1.0)
+    procrastination_risk = serializers.FloatField(required=False, default=1.0)
+    reschedule_count = serializers.IntegerField(required=False, default=0)
 
     # 4. How to Create a Mongo Document
     def create(self, validated_data):
-        # validated_data automatically includes the 'owner' we stapled in views.py
         task = Task(**validated_data)
         task.save()
         return task
 
-    # 5. How to Update a Mongo Document (for your drag-and-drop timeline)
+    # 5. How to Update a Mongo Document 
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
