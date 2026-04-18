@@ -31,7 +31,8 @@ class Sidebar(QWidget):
 
         # 2. Main Navigation (Cleaned up!)
         self.add_nav_button(layout, "Dashboard", "assets/icons/dashboard.svg", checked=True)
-        self.add_nav_button(layout, "Timeline", "assets/icons/timeline.svg")
+        # THE FIX: Changed from "Timeline" to "Execution Plan"
+        self.add_nav_button(layout, "Execution Plan", "assets/icons/timeline.svg")
 
         layout.addSpacing(20)
 

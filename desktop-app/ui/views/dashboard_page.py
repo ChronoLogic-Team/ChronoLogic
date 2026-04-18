@@ -1,8 +1,9 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout, QPushButton, QScrollArea
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout, QPushButton, QScrollArea, QMessageBox
 from PyQt6.QtCore import Qt, pyqtSignal
 
 class DashboardPage(QWidget):
-    task_edit_requested = pyqtSignal(dict) # THE NEW SIGNAL
+    task_edit_requested = pyqtSignal(dict) 
+    task_delete_requested = pyqtSignal(str) # THE NEW DELETE SIGNAL
 
     def __init__(self):
         super().__init__()
@@ -43,7 +44,6 @@ class DashboardPage(QWidget):
         chart_area.addStretch()
         chart_area.setSpacing(15)
         
-        # Data: Height factor, Color override (optional)
         bars_data = [40, 60, 30, 80, 50, 90, 75]
         
         for val in bars_data:
@@ -54,9 +54,8 @@ class DashboardPage(QWidget):
             bar.setObjectName("BarChartBar")
             bar.setFixedWidth(30)
             bar.setFixedHeight(val * 2) 
-            # Make the last bar slightly lighter or different if needed
             
-            bar_container.addStretch() # Push bar down
+            bar_container.addStretch() 
             bar_container.addWidget(bar)
             
             chart_area.addLayout(bar_container)
@@ -77,7 +76,7 @@ class DashboardPage(QWidget):
         labels_layout.addStretch()
         
         health_layout.addLayout(labels_layout)
-        health_layout.addStretch() # Push everything to top
+        health_layout.addStretch()
 
         layout.addWidget(health_card, 0, 0)
 
@@ -179,29 +178,43 @@ class DashboardPage(QWidget):
 
         layout.addWidget(deadlines_card, 1, 1)
 
-        # Column stretching
         layout.setColumnStretch(0, 2)
         layout.setColumnStretch(1, 1)
 
         scroll.setWidget(content_widget)
         main_layout.addWidget(scroll)
 
+    # THE SAFETY POPUP
+    def confirm_delete(self, task):
+        task_id = str(task.get("id", task.get("_id", "")))
+        title = task.get("title", "this task")
+        
+        if not task_id: return
+
+        # Ask the user if they are sure
+        reply = QMessageBox.question(
+            self, 'Confirm Deletion',
+            f"Are you sure you want to permanently delete '{title}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.task_delete_requested.emit(task_id)
+
     def update_tasks(self, tasks):
-        # Clear existing deadlines
         while self.deadlines_layout.count():
             item = self.deadlines_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
             elif item.layout():
-                # Simple cleanup for nested layouts we create below
                 while item.layout().count():
                      child = item.layout().takeAt(0)
                      if child.widget(): child.widget().deleteLater()
                 item.layout().deleteLater()
                 
-        # Sort tasks by deadline if possible, for now just show top 4
         from datetime import datetime
-        sorted_tasks = reversed(tasks[-4:]) # Last added
+        sorted_tasks = reversed(tasks[-4:]) 
         
         for task in sorted_tasks:
             title = task.get("title", "Unknown")
@@ -224,27 +237,24 @@ class DashboardPage(QWidget):
             lbl.setStyleSheet("font-weight: 600; color: #555; font-size: 13px;")
             time_lbl = QLabel(time_str)
             time_lbl.setStyleSheet("color: #333; font-size: 13px; font-weight: 600;")
-
-            dot = QLabel("●")
-            dot.setStyleSheet(f"color: {color}; font-size: 12px;")
-            lbl = QLabel(title[:20] + ("..." if len(title) > 20 else ""))
-            lbl.setStyleSheet("font-weight: 600; color: #555; font-size: 13px;")
-            time_lbl = QLabel(time_str)
-            time_lbl.setStyleSheet("color: #333; font-size: 13px; font-weight: 600;")
             
-            # THE NEW EDIT BUTTON
             edit_btn = QPushButton("✏️")
             edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
             edit_btn.setStyleSheet("background: transparent; border: none; font-size: 14px;")
-            # When clicked, shout to the MainWindow with the task's data!
             edit_btn.clicked.connect(lambda checked, t=task: self.task_edit_requested.emit(t))
+
+            # THE NEW TRASH CAN BUTTON
+            del_btn = QPushButton("🗑️")
+            del_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            del_btn.setStyleSheet("background: transparent; border: none; font-size: 14px;")
+            del_btn.clicked.connect(lambda checked, t=task: self.confirm_delete(t))
             
             row.addWidget(dot)
             row.addSpacing(10)
             row.addWidget(lbl)
             row.addStretch()
             row.addWidget(time_lbl)
-            row.addWidget(edit_btn) # ADDED TO THE ROW
+            row.addWidget(edit_btn) 
+            row.addWidget(del_btn) # Add it right next to the edit button!
             
             self.deadlines_layout.addWidget(row_widget)
-
