@@ -1,7 +1,14 @@
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 from django.shortcuts import render
 from rest_framework_mongoengine import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from django.contrib.auth.hashers import make_password, check_password
 import jwt
 import datetime
@@ -10,8 +17,10 @@ from django.conf import settings
 
 # --- AI SDK IMPORT ---
 import google.generativeai as genai
-# PUT YOUR ACTUAL GEMINI API KEY IN THE QUOTES BELOW:
-genai.configure(api_key="AIzaSyDUWWVn8ouAOLjxMFqCCO0c0sksiVpdY4I")
+
+# Get the key securely from environment
+api_key = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=api_key)
 
 from .serializers import TaskSerializer
 from .models import Task, AbstractBaseUser
@@ -22,7 +31,6 @@ class IsMongoAuthenticated(BasePermission):
     def has_permission(self, request, view):
         if not request.user:
             return False
-            
         is_anon = getattr(request.user, 'is_anonymous', False)
         return not is_anon
 
@@ -43,57 +51,69 @@ class TaskViewSet(viewsets.ModelViewSet):
         desc = serializer.validated_data.get('description', '')
         duration = serializer.validated_data.get('estimated_duration', 0.0)
         try:
-            # 1. Smart Router
+            # Smart Router to find available flash model
             valid_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
             best_model = next((m for m in valid_models if 'flash' in m), valid_models[0])
             
-            # flush=True forces Python to print to the terminal instantly
-            print(f"🧠 AI Brain routing to: {best_model}", flush=True) 
-            
-            # Force JSON mode so the parser is bulletproof
             model = genai.GenerativeModel(best_model, generation_config={"response_mime_type": "application/json"})
             
             prompt = f"""
             Analyze task: "{title}". Description: "{desc}".
-            Return a JSON object with these exact keys: "predicted_hours" (float), "category" (string max 8 chars), "cognitive_score" (float 1.0 to 3.0), "procrastination_risk" (float 1.0 to 5.0).
+            As a Software Engineering Auditor, return a JSON object:
+            "predicted_hours" (float), 
+            "category" (string max 12 chars), 
+            "cognitive_score" (float 1.0 to 3.0), 
+            "procrastination_risk" (float 1.0 to 5.0).
+            Note: Complex architecture or math tasks MUST be near 3.0 cog_score.
             """
             
-            # 2. Call the AI
             response = model.generate_content(prompt)
             ai_data = json.loads(response.text)
 
-            # 4. Extract Data & Apply Zero-UI Tricks
-            ai_duration = float(ai_data.get('predicted_hours', duration))
-            
-            # THE FIX: Keep the category string short so PyQt's font scaler doesn't crash!
-            raw_cat = str(ai_data.get('category', 'Task'))
-            final_category = raw_cat[:12] # Hard limit to 12 characters
-
-            # 5. Save to MongoDB
             serializer.save(
                 owner=self.request.user,
-                estimated_duration=ai_duration,
-                category=final_category,
+                estimated_duration=float(ai_data.get('predicted_hours', duration)),
+                category=str(ai_data.get('category', 'Task'))[:12],
                 cognitive_score=float(ai_data.get('cognitive_score', 1.0)),
                 procrastination_risk=float(ai_data.get('procrastination_risk', 1.0))
             )
-            print(f"🤖 AI Successfully Analyzed Task: {title}", flush=True)
+            print(f"🤖 AI Logic Success: {title} assigned Cog Score: {ai_data.get('cognitive_score')}", flush=True)
 
         except Exception as e:
             print(f"⚠️ AI Engine Fallback. Error: {e}", flush=True) 
             serializer.save(owner=self.request.user)
 
     def perform_update(self, serializer):
+        instance = self.get_object()
         if 'dead_line' in serializer.validated_data:
             new_deadline = serializer.validated_data['dead_line']
-            old_deadline = serializer.instance.dead_line
+            old_deadline = instance.dead_line
             
             if old_deadline and new_deadline != old_deadline:
-                current_count = getattr(serializer.instance, 'reschedule_count', 0)
+                current_count = getattr(instance, 'reschedule_count', 0)
                 serializer.save(reschedule_count=current_count + 1)
                 return
                 
         serializer.save()
+
+    # --- DASHBOARD STATS FEATURE ---
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        # Calculate stats only based on tasks user has marked as 'Done'
+        queryset = self.get_queryset().filter(is_completed=True)
+        
+        total_energy = sum([float(t.cognitive_score or 0) for t in queryset])
+        
+        distribution = {}
+        for t in queryset:
+            cat = t.category or "Other"
+            distribution[cat] = distribution.get(cat, 0) + 1
+            
+        return Response({
+            "total_brainpower": round(total_energy, 1),
+            "tasks_completed": queryset.count(),
+            "category_distribution": distribution
+        })
 
 class RegisterView(APIView):
     def post(self, request):
@@ -101,11 +121,10 @@ class RegisterView(APIView):
         password = request.data.get('password')
         name = request.data.get('full_name')
 
-        if AbstractBaseUser.objects(email = email).first():
+        if AbstractBaseUser.objects(email=email).first():
             return Response({'error': 'Email exists'}) 
 
-        hashed = make_password(password)
-        user = AbstractBaseUser(email = email, password = hashed, full_name = name)
+        user = AbstractBaseUser(email=email, password=make_password(password), full_name=name)
         user.save()
         return Response({'success': 'User created'})
 
@@ -114,10 +133,10 @@ class LoginView(APIView):
         email = request.data.get('email')
         password = request.data.get('password')
 
-        user = AbstractBaseUser.objects(email = email).first()
+        user = AbstractBaseUser.objects(email=email).first()
 
         if user is None or not check_password(password, user.password):
-            return Response({'error' : 'Invalid_login'})
+            return Response({'error': 'Invalid_login'})
         
         payload = {
             'user_id': str(user.id),

@@ -1,11 +1,21 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QLabel, QFrame, QHBoxLayout
-from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QLabel, QFrame, QHBoxLayout, QPushButton
+from PyQt6.QtCore import Qt, pyqtSignal
 from datetime import datetime
 
 class TaskCard(QFrame):
+    # This signal allows the card to tell the API to update the status
+    status_changed = pyqtSignal(str, dict)
+
     def __init__(self, task):
         super().__init__()
-        # Clean, modern, minimalist styling
+        self.task_id = str(task.get("id", task.get("_id", "")))
+        
+        # Get AI Scores and Status
+        cog_score = task.get("cognitive_score", 1.0)
+        proc_risk = task.get("procrastination_risk", 1.0)
+        ai_category = task.get("category", "Task")
+        current_status = task.get("status", "Pending")
+
         self.setStyleSheet("""
             QFrame {
                 background-color: #FFFFFF;
@@ -15,21 +25,18 @@ class TaskCard(QFrame):
                 margin-bottom: 8px;
             }
             QFrame:hover {
-                border: 1px solid #C7D2FE;
+                border: 1px solid #4F46E5;
                 background-color: #F9FAFB;
             }
         """)
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
         
-        # Left side: Text Info
         text_layout = QVBoxLayout()
         text_layout.setSpacing(4)
         
         title = QLabel(task.get("title", "Untitled Task"))
         title.setStyleSheet("font-size: 15px; font-weight: 700; color: #111827; border: none; background: transparent;")
         
-        # Safely parse the deadline
         dl_str = task.get('dead_line', '')
         try:
             dl_obj = datetime.fromisoformat(dl_str.replace("Z", "+00:00"))
@@ -37,29 +44,45 @@ class TaskCard(QFrame):
         except:
             formatted_dl = "Unknown"
             
-        meta_str = f"Due: {formatted_dl}  •  Est: {task.get('estimated_duration', 0)}h"
-        meta = QLabel(meta_str)
+        meta = QLabel(f"Due: {formatted_dl}  •  Est: {task.get('estimated_duration', 0)}h")
         meta.setStyleSheet("font-size: 12px; font-weight: 500; color: #6B7280; border: none; background: transparent;")
+        
+        # RESTORED: Neuro-Engine labels
+        self.neuro_meta = QLabel(f"🧠 Cog Load: {cog_score} | ⚠️ Risk: {proc_risk}")
+        self.neuro_meta.setStyleSheet("font-size: 11px; font-weight: 600; color: #4F46E5; border: none; background: transparent;")
+        
+        # RESTORED: Status Toggle Button
+        self.status_btn = QPushButton(current_status)
+        self.status_btn.setFixedWidth(90)
+        self.status_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.update_status_style(current_status)
+        self.status_btn.clicked.connect(self.cycle_status)
         
         text_layout.addWidget(title)
         text_layout.addWidget(meta)
+        text_layout.addWidget(self.neuro_meta)
+        text_layout.addWidget(self.status_btn)
         
-        # Right side: AI Action Badge
-        badge = QLabel("⚡ AI Prioritized")
-        badge.setStyleSheet("""
-            background-color: #EEF2FF; 
-            color: #4F46E5; 
-            padding: 4px 10px; 
-            border-radius: 6px; 
-            font-weight: 700; 
-            font-size: 11px; 
-            border: none;
-        """)
-        badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Right side: Dynamic AI Action Badge
+        badge = QLabel(f"⚡ {ai_category}")
+        badge.setStyleSheet("background-color: #EEF2FF; color: #4F46E5; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 11px;")
         
         layout.addLayout(text_layout)
         layout.addStretch()
         layout.addWidget(badge)
+
+    def update_status_style(self, status):
+        styles = {"Pending": ("#F3F4F6", "#374151"), "In Progress": ("#DBEAFE", "#1E40AF"), "Done": ("#DCFCE7", "#16A34A")}
+        bg, txt = styles.get(status, styles["Pending"])
+        self.status_btn.setStyleSheet(f"background: {bg}; color: {txt}; border-radius: 6px; font-weight: 800; font-size: 10px; padding: 5px; border: none;")
+
+    def cycle_status(self):
+        steps = ["Pending", "In Progress", "Done"]
+        current = self.status_btn.text()
+        next_s = steps[(steps.index(current) + 1) % 3]
+        self.status_btn.setText(next_s)
+        self.update_status_style(next_s)
+        self.status_changed.emit(self.task_id, {"status": next_s, "is_completed": next_s == "Done"})
 
 class ExecutionView(QWidget):
     def __init__(self):
