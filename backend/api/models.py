@@ -15,14 +15,15 @@ class Task(Document):
     # core data
     title = StringField(required=True, max_length=200)
     description = StringField()
-    category = StringField(default='General')
+    category = StringField(max_length=12)
 
     # Scheduling
     dead_line = DateTimeField(required=True)
-    estimated_duration = FloatField(required=True)
+    estimated_duration = FloatField(default=0.0)
     actual_duration = FloatField(default=0.0)
 
     # Status
+    status = StringField(default="Pending")
     is_completed = BooleanField(default=False)
     created_at = DateTimeField(default=datetime.datetime.now)
 

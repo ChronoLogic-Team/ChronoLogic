@@ -3,24 +3,21 @@ from PyQt6.QtCore import Qt, pyqtSignal
 
 class DashboardPage(QWidget):
     task_edit_requested = pyqtSignal(dict) 
-    task_delete_requested = pyqtSignal(str) # THE NEW DELETE SIGNAL
+    task_delete_requested = pyqtSignal(str) 
 
     def __init__(self):
         super().__init__()
         self.setup_ui()
 
     def setup_ui(self):
-        # Main Wrapper Layout
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Scroll Area
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet("QScrollArea { background-color: transparent; border: none; }")
         
-        # Content Widget
         content_widget = QWidget()
         content_widget.setObjectName("ScrollContent")
         content_widget.setStyleSheet("#ScrollContent { background-color: transparent; }")
@@ -29,56 +26,24 @@ class DashboardPage(QWidget):
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(20)
 
-        # 1. Project Health Velocity (Bar Chart)
-        health_card = QFrame()
-        health_card.setObjectName("ContentCard")
-        health_layout = QVBoxLayout(health_card)
+        # 1. Neuro-Activity Distribution (Bar Chart)
+        self.health_card = QFrame()
+        self.health_card.setObjectName("ContentCard")
+        health_layout = QVBoxLayout(self.health_card)
         health_layout.setContentsMargins(20, 20, 20, 20)
         
-        health_title = QLabel("Project Health Velocity")
+        health_title = QLabel("Neuro-Activity Distribution")
         health_title.setObjectName("CardTitle")
         health_layout.addWidget(health_title)
         
-        # Chart Container
-        chart_area = QHBoxLayout()
-        chart_area.addStretch()
-        chart_area.setSpacing(15)
+        self.chart_area = QHBoxLayout()
+        self.chart_area.setSpacing(15)
+        health_layout.addLayout(self.chart_area)
         
-        bars_data = [40, 60, 30, 80, 50, 90, 75]
+        # Init placeholder bars
+        self.draw_bars({"Dev": 1, "ADM": 1, "LOG": 1})
         
-        for val in bars_data:
-            bar_container = QVBoxLayout()
-            bar_container.setSpacing(10)
-            
-            bar = QFrame()
-            bar.setObjectName("BarChartBar")
-            bar.setFixedWidth(30)
-            bar.setFixedHeight(val * 2) 
-            
-            bar_container.addStretch() 
-            bar_container.addWidget(bar)
-            
-            chart_area.addLayout(bar_container)
-            
-        chart_area.addStretch()
-        health_layout.addLayout(chart_area)
-        
-        # X-Axis Labels
-        labels_layout = QHBoxLayout()
-        labels_layout.addStretch()
-        labels_layout.setSpacing(15)
-        for day in ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]:
-            lbl = QLabel(day)
-            lbl.setObjectName("ChartLabel")
-            lbl.setFixedWidth(30)
-            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            labels_layout.addWidget(lbl)
-        labels_layout.addStretch()
-        
-        health_layout.addLayout(labels_layout)
-        health_layout.addStretch()
-
-        layout.addWidget(health_card, 0, 0)
+        layout.addWidget(self.health_card, 0, 0)
 
         # 2. On Track Card
         track_card = QFrame()
@@ -87,84 +52,64 @@ class DashboardPage(QWidget):
         track_layout.setContentsMargins(25, 30, 25, 30)
         
         icon = QLabel("⚡")
-        icon.setStyleSheet("font-size: 32px; color: rgba(255,255,255,0.9); margin-bottom: 20px;")
+        icon.setStyleSheet("font-size: 32px; color: white; margin-bottom: 20px;")
         
-        track_title = QLabel("On Track")
-        track_title.setStyleSheet("font-size: 26px; font-weight: 800; color: white; margin-bottom: 10px;")
+        self.track_title = QLabel("System Idle")
+        self.track_title.setStyleSheet("font-size: 26px; font-weight: 800; color: white; margin-bottom: 10px;")
         
-        track_desc = QLabel('Your current "Infrastructure" branch is 12% faster than baseline estimates.')
-        track_desc.setWordWrap(True)
-        track_desc.setStyleSheet("font-size: 14px; color: rgba(255,255,255,0.85); line-height: 1.4;")
+        self.track_desc = QLabel('Analyze tasks in Execution Plan to see cognitive deployment.')
+        self.track_desc.setWordWrap(True)
+        self.track_desc.setStyleSheet("font-size: 14px; color: rgba(255,255,255,0.85);")
+        
+        self.energy_val_label = QLabel("0.0 Units")
+        self.energy_val_label.setStyleSheet("font-size: 40px; font-weight: 900; color: white; margin-top: 10px;")
         
         track_layout.addWidget(icon)
+        track_layout.addWidget(self.track_title)
+        track_layout.addWidget(self.track_desc)
         track_layout.addStretch()
-        track_layout.addWidget(track_title)
-        track_layout.addWidget(track_desc)
-        track_layout.addStretch()
-        
-        btn = QPushButton("View Insights")
-        btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn.setStyleSheet("""
-            QPushButton {
-                background-color: rgba(255,255,255,0.2); 
-                color: white; 
-                border-radius: 10px; 
-                padding: 12px; 
-                font-weight: bold; 
-                border: 1px solid rgba(255,255,255,0.3);
-            }
-            QPushButton:hover {
-                background-color: rgba(255,255,255,0.3);
-            }
-        """)
-        track_layout.addWidget(btn)
+        track_layout.addWidget(self.energy_val_label)
         
         layout.addWidget(track_card, 0, 1)
 
-        # 3. Critical Dependencies
+        # 3. AI Recommendations
         deps_card = QFrame()
         deps_card.setObjectName("ContentCard")
         deps_layout = QVBoxLayout(deps_card)
         deps_layout.setContentsMargins(20, 20, 20, 20)
         
-        deps_title = QLabel("Critical Dependencies")
+        deps_title = QLabel("AI Focus Recommendation")
         deps_title.setObjectName("CardTitle")
         deps_layout.addWidget(deps_title)
         
-        dep_item = QFrame()
-        dep_item.setStyleSheet("background-color: #FFF5F5; border-radius: 10px; padding: 10px;")
-        dep_row = QHBoxLayout(dep_item)
+        self.dep_item = QFrame()
+        self.dep_item.setStyleSheet("background-color: #F5F3FF; border-radius: 10px; padding: 10px;")
+        dep_row = QHBoxLayout(self.dep_item)
         
-        alert_icon = QLabel("!")
+        alert_icon = QLabel("🧠")
         alert_icon.setFixedSize(32, 32)
+        alert_icon.setStyleSheet("background-color: #EDE9FE; border-radius: 8px;")
         alert_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        alert_icon.setStyleSheet("background-color: #FFDEDE; color: #E74C3C; font-weight: bold; border-radius: 8px; font-size: 16px;")
         
         dep_info = QVBoxLayout()
-        dep_name = QLabel("API Integration Layer")
-        dep_name.setStyleSheet("font-weight: 700; color: #333; font-size: 14px;")
-        dep_meta = QLabel("Blocked by T-101")
-        dep_meta.setStyleSheet("color: #E74C3C; font-size: 12px; font-weight: 600;")
-        dep_info.addWidget(dep_name)
-        dep_info.addWidget(dep_meta)
+        self.rec_title = QLabel("Ready for Deep Work")
+        self.rec_title.setStyleSheet("font-weight: 700; color: #333; font-size: 14px;")
+        self.rec_meta = QLabel("No high-risk bottlenecks.")
+        self.rec_meta.setStyleSheet("color: #6366F1; font-size: 12px;")
+        dep_info.addWidget(self.rec_title)
+        dep_info.addWidget(self.rec_meta)
         
         dep_row.addWidget(alert_icon)
-        dep_row.addSpacing(10)
         dep_row.addLayout(dep_info)
         dep_row.addStretch()
-        dep_row.addWidget(QLabel("→"))
-        
-        deps_layout.addWidget(dep_item)
-        deps_layout.addStretch()
-        
+        deps_layout.addWidget(self.dep_item)
         layout.addWidget(deps_card, 1, 0)
 
-        # 4. Upcoming Deadlines
+        # 4. Deadlines
         deadlines_card = QFrame()
         deadlines_card.setObjectName("ContentCard")
         dead_layout = QVBoxLayout(deadlines_card)
         dead_layout.setContentsMargins(20, 20, 20, 20)
-        
         dead_title = QLabel("Upcoming Deadlines")
         dead_title.setObjectName("CardTitle")
         dead_layout.addWidget(dead_title)
@@ -172,89 +117,92 @@ class DashboardPage(QWidget):
         self.deadlines_container = QWidget()
         self.deadlines_layout = QVBoxLayout(self.deadlines_container)
         self.deadlines_layout.setContentsMargins(0,0,0,0)
-        
         dead_layout.addWidget(self.deadlines_container)
-        dead_layout.addStretch()
-
         layout.addWidget(deadlines_card, 1, 1)
 
         layout.setColumnStretch(0, 2)
         layout.setColumnStretch(1, 1)
-
         scroll.setWidget(content_widget)
         main_layout.addWidget(scroll)
 
-    # THE SAFETY POPUP
+    def draw_bars(self, distribution):
+        while self.chart_area.count():
+            child = self.chart_area.takeAt(0)
+            if child.widget(): child.widget().deleteLater()
+            elif child.layout():
+                while child.layout().count():
+                    c = child.layout().takeAt(0)
+                    if c.widget(): c.widget().deleteLater()
+
+        self.chart_area.addStretch()
+        for cat, val in distribution.items():
+            container = QVBoxLayout()
+            bar = QFrame()
+            bar.setObjectName("BarChartBar")
+            bar.setFixedWidth(35)
+            bar.setFixedHeight(min(150, int(val) * 30)) 
+            lbl = QLabel(cat[:3].upper())
+            lbl.setObjectName("ChartLabel")
+            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            container.addStretch()
+            container.addWidget(bar)
+            container.addWidget(lbl)
+            self.chart_area.addLayout(container)
+        self.chart_area.addStretch()
+
+    def update_stats(self, stats_data):
+        print(f"📊 Dashboard Received: {stats_data}")
+        energy = stats_data.get('total_brainpower', 0)
+        completed = stats_data.get('tasks_completed', 0)
+        dist = stats_data.get('category_distribution', {})
+
+        self.energy_val_label.setText(f"{energy} Units")
+        if energy > 0:
+            self.track_title.setText("Neuro-Flow Active")
+            self.track_desc.setText(f"AI verified {completed} technical objectives completed.")
+        
+        if dist:
+            self.draw_bars(dist)
+
     def confirm_delete(self, task):
         task_id = str(task.get("id", task.get("_id", "")))
-        title = task.get("title", "this task")
-        
         if not task_id: return
-
-        # Ask the user if they are sure
-        reply = QMessageBox.question(
-            self, 'Confirm Deletion',
-            f"Are you sure you want to permanently delete '{title}'?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-
+        reply = QMessageBox.question(self, 'Confirm Deletion', f"Delete task?", 
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if reply == QMessageBox.StandardButton.Yes:
             self.task_delete_requested.emit(task_id)
 
     def update_tasks(self, tasks):
         while self.deadlines_layout.count():
             item = self.deadlines_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-            elif item.layout():
-                while item.layout().count():
-                     child = item.layout().takeAt(0)
-                     if child.widget(): child.widget().deleteLater()
-                item.layout().deleteLater()
+            if item.widget(): item.widget().deleteLater()
                 
         from datetime import datetime
-        sorted_tasks = reversed(tasks[-4:]) 
+        sorted_tasks = sorted(tasks, key=lambda x: x.get('dead_line', ''))[:4]
         
         for task in sorted_tasks:
-            title = task.get("title", "Unknown")
-            try:
-                deadline_dt = datetime.fromisoformat(task.get("dead_line", "").replace("Z", "+00:00"))
-                time_str = deadline_dt.strftime("%H:%M")
-            except:
-                time_str = "--:--"
-                
-            color = "#5A4AD1"
-            if task.get("status") == "Completed": color = "#2ECC71"
-            
             row_widget = QWidget()
             row = QHBoxLayout(row_widget)
             row.setContentsMargins(0,0,0,0)
             
             dot = QLabel("●")
-            dot.setStyleSheet(f"color: {color}; font-size: 12px;")
-            lbl = QLabel(title[:20] + ("..." if len(title) > 20 else ""))
-            lbl.setStyleSheet("font-weight: 600; color: #555; font-size: 13px;")
-            time_lbl = QLabel(time_str)
-            time_lbl.setStyleSheet("color: #333; font-size: 13px; font-weight: 600;")
+            color = "#2ECC71" if task.get("status") == "Done" else "#5A4AD1"
+            dot.setStyleSheet(f"color: {color};")
             
+            lbl = QLabel(task.get("title", "Task")[:20])
+            lbl.setStyleSheet("font-weight: 600; color: #555;")
+            
+            # FIXED CSS: Removed 'cursor: pointer' which was crashing terminal
             edit_btn = QPushButton("✏️")
-            edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
             edit_btn.setStyleSheet("background: transparent; border: none; font-size: 14px;")
-            edit_btn.clicked.connect(lambda checked, t=task: self.task_edit_requested.emit(t))
+            edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            edit_btn.clicked.connect(lambda ch, t=task: self.task_edit_requested.emit(t))
 
-            # THE NEW TRASH CAN BUTTON
             del_btn = QPushButton("🗑️")
-            del_btn.setCursor(Qt.CursorShape.PointingHandCursor)
             del_btn.setStyleSheet("background: transparent; border: none; font-size: 14px;")
-            del_btn.clicked.connect(lambda checked, t=task: self.confirm_delete(t))
+            del_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            del_btn.clicked.connect(lambda ch, t=task: self.confirm_delete(t))
             
-            row.addWidget(dot)
-            row.addSpacing(10)
-            row.addWidget(lbl)
-            row.addStretch()
-            row.addWidget(time_lbl)
-            row.addWidget(edit_btn) 
-            row.addWidget(del_btn) # Add it right next to the edit button!
-            
+            row.addWidget(dot); row.addWidget(lbl); row.addStretch()
+            row.addWidget(edit_btn); row.addWidget(del_btn)
             self.deadlines_layout.addWidget(row_widget)

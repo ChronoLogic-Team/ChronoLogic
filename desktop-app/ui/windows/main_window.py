@@ -2,10 +2,7 @@ from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLin
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt, QFile, QTextStream
 
-# Import Widgets
 from ui.widgets.sidebar import Sidebar
-
-# Import Pages
 from ui.views.dashboard_page import DashboardPage
 from ui.views.execution_views import ExecutionView
 
@@ -14,22 +11,18 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("ChronoLogic")
         self.setGeometry(100, 100, 1280, 800)
-        
-        # THE FIX: Save the api_client FIRST before setting up the UI
         self.api_client = api_client 
-        
+        self.overdue_task_titles = []
         self.load_styles()
-        self.setup_ui() # Now the UI can safely find self.api_client!
-        
+        self.setup_ui() 
+        self.api_client.stats_fetched.connect(self.dashboard_page.update_stats)
         self.api_client.tasks_fetched.connect(self.on_tasks_fetched)
         self.api_client.error_occurred.connect(self.on_api_error)
         self.api_client.task_created.connect(self.on_task_created)
         self.api_client.task_updated.connect(self.on_task_updated)
-        
-        # Delete Triggers
         self.api_client.task_deleted.connect(lambda task_id: print(f"Deleted task {task_id}"))
         self.api_client.task_deleted.connect(lambda _: self.api_client.fetch_tasks())
-        
+
     def load_styles(self):
         file = QFile("assets/styles.qss")
         if file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text):
@@ -37,79 +30,56 @@ class MainWindow(QMainWindow):
             self.setStyleSheet(stream.readAll())
 
     def setup_ui(self):
-        # Main Container
         main_widget = QWidget()
         main_widget.setObjectName("centralwidget")
         self.setCentralWidget(main_widget)
-        
         main_layout = QHBoxLayout(main_widget)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
-
-        # 1. Sidebar
         self.sidebar = Sidebar()
         main_layout.addWidget(self.sidebar)
-
-        # 2. Main Content Area
         content_widget = QWidget()
         content_layout = QVBoxLayout(content_widget)
         content_layout.setContentsMargins(30, 30, 30, 30)
         content_layout.setSpacing(20)
-        
-        # -- Top Bar --
         self.create_top_bar(content_layout)
-        
-        # -- Stacked Widget for Pages --
         self.stack = QStackedWidget()
         self.dashboard_page = DashboardPage()
-        
-        # Wire up dashboard signals
         if hasattr(self.dashboard_page, 'task_edit_requested'):
             self.dashboard_page.task_edit_requested.connect(self.open_edit_task_dialog)
             self.dashboard_page.task_delete_requested.connect(self.api_client.delete_task)
-            
         self.execution_page = ExecutionView()
-        
-        self.stack.addWidget(self.dashboard_page) # Index 0
-        self.stack.addWidget(self.execution_page) # Index 1
-        
+        self.execution_page.status_changed.connect(self.api_client.update_task)
+        self.stack.addWidget(self.dashboard_page)
+        self.stack.addWidget(self.execution_page)
         content_layout.addWidget(self.stack)
         main_layout.addWidget(content_widget)
-
-        # Connect Sidebar Signals
         self.connect_sidebar()
 
     def create_top_bar(self, layout):
         top_bar = QHBoxLayout()
-        
         page_title = QLabel("My AI Workspace")
         page_title.setStyleSheet("font-size: 24px; font-weight: bold; color: #333;")
-        
         search_input = QLineEdit()
         search_input.setPlaceholderText("Search tasks...")
         search_input.setObjectName("SearchInput")
-        
         self.notif_btn = QPushButton("🔔")
         self.notif_btn.setObjectName("IconButton")
         self.notif_btn.setStyleSheet("color: #333; background: transparent; border: none; font-size: 16px;")
         self.notif_btn.clicked.connect(self.show_overdue_tasks)
-        
         new_task_btn = QPushButton("+ New Task")
         new_task_btn.setObjectName("NewTaskButton")
         new_task_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         new_task_btn.clicked.connect(self.open_new_task_dialog)
-
         top_bar.addWidget(page_title)
         top_bar.addStretch()
         top_bar.addWidget(search_input)
         top_bar.addWidget(self.notif_btn) 
         top_bar.addWidget(new_task_btn)
-        
         layout.addLayout(top_bar)
 
     def connect_sidebar(self):    
         buttons = self.sidebar.findChildren(QPushButton, "SidebarButton")
-        
         for btn in buttons:
             if btn.text() == "Dashboard":
                 btn.clicked.connect(lambda checked, idx=0: self.switch_page(idx))
@@ -118,9 +88,10 @@ class MainWindow(QMainWindow):
 
     def switch_page(self, index):
         self.stack.setCurrentIndex(index)
-        
+        if index == 0:
+            print("📊 Dashboard active: Fetching Neuro-Stats...")
+            self.api_client.fetch_stats()
         buttons = self.sidebar.findChildren(QPushButton, "SidebarButton")
-        
         for btn in buttons:
             if index == 0 and btn.text() == "Dashboard":
                 btn.setChecked(True)
@@ -134,13 +105,10 @@ class MainWindow(QMainWindow):
             self.dashboard_page.update_tasks(tasks)
         if hasattr(self.execution_page, 'update_tasks'):
             self.execution_page.update_tasks(tasks)
-
-        # Smart Notification Logic capturing titles
         from datetime import datetime, timezone
         overdue_count = 0
         self.overdue_task_titles = [] 
         now_utc = datetime.now(timezone.utc)
-        
         for task in tasks:
             dl_str = task.get('dead_line', '')
             try:
@@ -148,19 +116,11 @@ class MainWindow(QMainWindow):
                 if dl_obj < now_utc:
                     overdue_count += 1
                     self.overdue_task_titles.append(task.get('title', 'Unknown Task'))
-            except Exception as e:
+            except:
                 pass
-
         if overdue_count > 0:
             self.notif_btn.setText(f"🔔 {overdue_count}")
-            self.notif_btn.setStyleSheet("""
-                background-color: #DC2626; 
-                color: white; 
-                border-radius: 12px; 
-                padding: 4px 10px; 
-                font-weight: bold;
-                font-size: 14px;
-            """)
+            self.notif_btn.setStyleSheet("background-color: #DC2626; color: white; border-radius: 12px; padding: 4px 10px; font-weight: bold;")
         else:
             self.notif_btn.setText("🔔")
             self.notif_btn.setStyleSheet("color: #333; background: transparent; border: none; font-size: 16px;")
@@ -168,11 +128,9 @@ class MainWindow(QMainWindow):
     def show_overdue_tasks(self):
         if not hasattr(self, 'overdue_task_titles') or not self.overdue_task_titles:
             return
-            
         msg = "The following tasks have missed their deadlines:\n\n"
         for title in self.overdue_task_titles:
             msg += f"• {title}\n"
-            
         QMessageBox.warning(self, "Overdue Tasks", msg)
 
     def on_api_error(self, error):

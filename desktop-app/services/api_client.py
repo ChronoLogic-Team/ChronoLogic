@@ -19,6 +19,43 @@ class FetchTasksThread(QThread):
         except Exception as e:
             self.finished.emit([], str(e))
 
+# 1. Add this Thread class at the top with your other threads
+class FetchStatsThread(QThread):
+    finished = pyqtSignal(dict, str)
+
+    def __init__(self, api_url, headers=None):
+        super().__init__()
+        self.api_url = api_url
+        self.headers = headers or {}
+
+    def run(self):
+        try:
+            response = requests.get(self.api_url, headers=self.headers)
+            if response.status_code == 200:
+                self.finished.emit(response.json(), "")
+            else:
+                self.finished.emit({}, f"Error {response.status_code}")
+        except Exception as e:
+            self.finished.emit({}, str(e))
+
+# 2. Add these to your APIClient class
+class APIClient(QObject):
+    stats_fetched = pyqtSignal(dict) # New signal for the dashboard
+    # ... (rest of your existing signals)
+
+    def fetch_stats(self):
+        thread = FetchStatsThread(
+            f"{self.base_url}/tasks/stats/", 
+            headers=self.get_auth_headers()
+        )
+        thread.finished.connect(self._on_fetch_stats_finished)
+        thread.start()
+        self._track_thread(thread)
+
+    def _on_fetch_stats_finished(self, stats, error):
+        if not error:
+            self.stats_fetched.emit(stats)
+
 class CreateTaskThread(QThread):
     finished = pyqtSignal(dict, str)
 
@@ -99,6 +136,9 @@ class APIClient(QObject):
     task_created = pyqtSignal(dict)
     task_updated = pyqtSignal(dict)
     task_deleted = pyqtSignal(str)
+
+    # --- ADD THIS LINE HERE ---
+    stats_fetched = pyqtSignal(dict)
     
     login_successful = pyqtSignal(dict)
     login_failed = pyqtSignal(str)
@@ -204,3 +244,23 @@ class APIClient(QObject):
             print(f"API Delete Error: {error}")
         else:
             self.task_deleted.emit(task_id)
+
+    def fetch_stats(self):
+        """Triggers the background thread to GET stats from Django"""
+        # Ensure we have the FetchStatsThread class defined (from Step 1)
+        thread = FetchStatsThread(
+            f"{self.base_url}/tasks/stats/", 
+            headers=self.get_auth_headers()
+        )
+        thread.finished.connect(self._on_fetch_stats_finished)
+        thread.start()
+        self._track_thread(thread)
+
+    def _on_fetch_stats_finished(self, stats, error):
+        """Handles the response from the thread and emits the signal"""
+        if error:
+            self.error_occurred.emit(f"Stats Error: {error}")
+            print(f"📊 Stats API Error: {error}")
+        else:
+            # This sends the data to main_window.py -> dashboard_page.py
+            self.stats_fetched.emit(stats)
