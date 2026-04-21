@@ -1,6 +1,30 @@
 import requests
 from PyQt6.QtCore import QObject, pyqtSignal, QThread
 
+# --- NEW REGISTER THREAD ---
+class RegisterThread(QThread):
+    finished = pyqtSignal(bool, str)
+
+    def __init__(self, api_url, user_data):
+        super().__init__()
+        self.api_url = api_url
+        self.user_data = user_data
+
+    def run(self):
+        try:
+            response = requests.post(self.api_url, json=self.user_data)
+            # 201 Created is the standard REST status for successful creation
+            if response.status_code in (200, 201):
+                self.finished.emit(True, "Registration Successful!")
+            else:
+                try:
+                    error_msg = response.json().get('error', 'Registration Failed')
+                except:
+                    error_msg = f"Error {response.status_code}"
+                self.finished.emit(False, error_msg)
+        except Exception as e:
+            self.finished.emit(False, str(e))
+
 class FetchTasksThread(QThread):
     finished = pyqtSignal(list, str)
 
@@ -19,7 +43,6 @@ class FetchTasksThread(QThread):
         except Exception as e:
             self.finished.emit([], str(e))
 
-# 1. Add this Thread class at the top with your other threads
 class FetchStatsThread(QThread):
     finished = pyqtSignal(dict, str)
 
@@ -37,24 +60,6 @@ class FetchStatsThread(QThread):
                 self.finished.emit({}, f"Error {response.status_code}")
         except Exception as e:
             self.finished.emit({}, str(e))
-
-# 2. Add these to your APIClient class
-class APIClient(QObject):
-    stats_fetched = pyqtSignal(dict) # New signal for the dashboard
-    # ... (rest of your existing signals)
-
-    def fetch_stats(self):
-        thread = FetchStatsThread(
-            f"{self.base_url}/tasks/stats/", 
-            headers=self.get_auth_headers()
-        )
-        thread.finished.connect(self._on_fetch_stats_finished)
-        thread.start()
-        self._track_thread(thread)
-
-    def _on_fetch_stats_finished(self, stats, error):
-        if not error:
-            self.stats_fetched.emit(stats)
 
 class CreateTaskThread(QThread):
     finished = pyqtSignal(dict, str)
@@ -129,19 +134,20 @@ class LoginThread(QThread):
         except Exception as e:
             self.finished.emit({}, str(e))
 
-
 class APIClient(QObject):
     tasks_fetched = pyqtSignal(list)
     error_occurred = pyqtSignal(str)
     task_created = pyqtSignal(dict)
     task_updated = pyqtSignal(dict)
     task_deleted = pyqtSignal(str)
-
-    # --- ADD THIS LINE HERE ---
     stats_fetched = pyqtSignal(dict)
     
     login_successful = pyqtSignal(dict)
     login_failed = pyqtSignal(str)
+
+    # --- NEW REGISTRATION SIGNALS ---
+    register_successful = pyqtSignal(str)
+    register_failed = pyqtSignal(str)
 
     def __init__(self, base_url="http://127.0.0.1:8000/api"):
         super().__init__()
@@ -150,9 +156,7 @@ class APIClient(QObject):
         self.active_threads = [] 
 
     def _track_thread(self, thread):
-        # THE FIX: Clean up old threads FIRST
         self.active_threads = [t for t in self.active_threads if t.isRunning()]
-        # THEN safely store the new thread!
         self.active_threads.append(thread)
 
     def get_auth_headers(self):
@@ -164,8 +168,8 @@ class APIClient(QObject):
     def login(self, email, password):
         thread = LoginThread(f"{self.base_url}/login/", {'email': email, 'password': password})
         thread.finished.connect(self._on_login_finished)
-        thread.start() # Start it first
-        self._track_thread(thread) # Then protect it
+        thread.start() 
+        self._track_thread(thread) 
 
     def _on_login_finished(self, data, error):
         if error:
@@ -177,6 +181,25 @@ class APIClient(QObject):
         else:
             self.access_token = data.get('token')
             self.login_successful.emit(data)
+
+    # --- NEW REGISTRATION METHOD ---
+    def register(self, name, email, password):
+        # We pass 'full_name' to match what Django expects
+        data = {
+            "full_name": name,
+            "email": email,
+            "password": password
+        }
+        thread = RegisterThread(f"{self.base_url}/register/", data)
+        thread.finished.connect(self._on_register_finished)
+        thread.start()
+        self._track_thread(thread)
+
+    def _on_register_finished(self, success, message):
+        if success:
+            self.register_successful.emit(message)
+        else:
+            self.register_failed.emit(message)
 
     def fetch_tasks(self):
         thread = FetchTasksThread(
@@ -246,8 +269,6 @@ class APIClient(QObject):
             self.task_deleted.emit(task_id)
 
     def fetch_stats(self):
-        """Triggers the background thread to GET stats from Django"""
-        # Ensure we have the FetchStatsThread class defined (from Step 1)
         thread = FetchStatsThread(
             f"{self.base_url}/tasks/stats/", 
             headers=self.get_auth_headers()
@@ -257,10 +278,8 @@ class APIClient(QObject):
         self._track_thread(thread)
 
     def _on_fetch_stats_finished(self, stats, error):
-        """Handles the response from the thread and emits the signal"""
         if error:
             self.error_occurred.emit(f"Stats Error: {error}")
             print(f"📊 Stats API Error: {error}")
         else:
-            # This sends the data to main_window.py -> dashboard_page.py
             self.stats_fetched.emit(stats)

@@ -15,6 +15,9 @@ class LoginWindow(QWidget):
         if self.api_client:
             self.api_client.login_successful.connect(self._on_login_success)
             self.api_client.login_failed.connect(self._on_login_failed)
+            # --- NEW REGISTRATION SIGNALS ---
+            self.api_client.register_successful.connect(self._on_register_success)
+            self.api_client.register_failed.connect(self._on_register_failed)
         
         self.setStyleSheet("""
             QWidget {
@@ -95,7 +98,6 @@ class LoginWindow(QWidget):
         
         card = QFrame()
         card.setObjectName("MainCard")
-        # simple shadow could be added here
         
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(30, 40, 30, 40)
@@ -213,10 +215,10 @@ class LoginWindow(QWidget):
             print(f"Logging in user: {email}")
             self.api_client.login(email, pwd)
         else:
-            # Fallback if no API client (should not happen in production)
             print("WARNING: No API client connected!")
             QMessageBox.warning(self, "Error", "Cannot connect to server.")
 
+    # --- UPDATED REGISTRATION LOGIC ---
     def handle_register(self):
         name = self.reg_name.text().strip()
         email = self.reg_email.text().strip()
@@ -226,16 +228,32 @@ class LoginWindow(QWidget):
             QMessageBox.warning(self, "Error", "Please fill in all fields.")
             return
             
-        print(f"Registering user: {name} ({email})")
-        # TODO: Connect to register API endpoint
-        QMessageBox.information(self, "Info", "Registration coming soon! Please use an existing account.")
+        if self.api_client:
+            print(f"Registering user: {name} ({email})")
+            self.api_client.register(name, email, pwd)
+        else:
+            QMessageBox.warning(self, "Error", "Cannot connect to server.")
 
     def _on_login_success(self, data):
-        """Called when the APIClient confirms login was successful."""
         print("Login successful! Token received.")
         self.login_successful.emit()
 
     def _on_login_failed(self, error_message):
-        """Called when the APIClient reports login failure."""
         print(f"Login failed: {error_message}")
         QMessageBox.warning(self, "Login Failed", error_message)
+
+    # --- NEW REGISTRATION HANDLERS ---
+    def _on_register_success(self, message):
+        print("Registration successful!")
+        QMessageBox.information(self, "Success", "Account created! You can now log in.")
+        self.toggle_mode() # Switch back to login view
+        self.log_email.setText(self.reg_email.text().strip()) # Pre-fill their email
+        self.log_pass.clear() # Keep password empty for security
+        # Clear out the registration form
+        self.reg_name.clear()
+        self.reg_email.clear()
+        self.reg_pass.clear()
+
+    def _on_register_failed(self, error_message):
+        print(f"Registration failed: {error_message}")
+        QMessageBox.warning(self, "Registration Failed", error_message)
