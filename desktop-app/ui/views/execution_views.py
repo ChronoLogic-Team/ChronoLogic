@@ -29,37 +29,37 @@ class TaskCard(QFrame):
         layout = QHBoxLayout(self)
         text_layout = QVBoxLayout()
         text_layout.setSpacing(4)
-        
+
         title = QLabel(task.get("title", "Untitled Task"))
         title.setStyleSheet("font-size: 15px; font-weight: 700; color: #111827; border: none; background: transparent;")
-        
+
         dl_str = task.get('dead_line', '')
         try:
             dl_obj = datetime.fromisoformat(dl_str.replace("Z", "+00:00"))
             formatted_dl = dl_obj.strftime("%b %d, %H:%M")
         except:
             formatted_dl = "Unknown"
-            
+
         meta = QLabel(f"Due: {formatted_dl}  •  Est: {task.get('estimated_duration', 0)}h")
         meta.setStyleSheet("font-size: 12px; font-weight: 500; color: #6B7280; border: none; background: transparent;")
-        
+
         self.neuro_meta = QLabel(f"🧠 Cog Load: {cog_score} | ⚠️ Risk: {proc_risk}")
         self.neuro_meta.setStyleSheet("font-size: 11px; font-weight: 600; color: #4F46E5; border: none; background: transparent;")
-        
+
         self.status_btn = QPushButton(current_status)
         self.status_btn.setFixedWidth(90)
         self.status_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.update_status_style(current_status)
         self.status_btn.clicked.connect(self.cycle_status)
-        
+
         text_layout.addWidget(title)
         text_layout.addWidget(meta)
         text_layout.addWidget(self.neuro_meta)
         text_layout.addWidget(self.status_btn)
-        
+
         badge = QLabel(f"⚡ {ai_category}")
         badge.setStyleSheet("background-color: #EEF2FF; color: #4F46E5; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 11px;")
-        
+
         layout.addLayout(text_layout)
         layout.addStretch()
         layout.addWidget(badge)
@@ -102,7 +102,7 @@ class ExecutionView(QWidget):
         self.scroll_layout.setContentsMargins(0, 0, 15, 0)
         self.scroll_area.setWidget(self.scroll_content)
         layout.addWidget(self.scroll_area)
-        
+
     def update_tasks(self, api_tasks):
         while self.scroll_layout.count():
             item = self.scroll_layout.takeAt(0)
@@ -121,12 +121,12 @@ class ExecutionView(QWidget):
                 dl_obj = datetime.fromisoformat(dl_str.replace("Z", "+00:00"))
                 hours_left = (dl_obj - now_utc).total_seconds() / 3600.0
             except:
-                hours_left = 999.0 
+                hours_left = 999.0
             try:
                 est_dur = float(task.get('estimated_duration') or 1.0)
                 if est_dur <= 0: est_dur = 1.0
-                cog_score = float(task.get('cognitive_score') or 1.0)     
-                proc_risk = float(task.get('procrastination_risk') or 1.0) 
+                cog_score = float(task.get('cognitive_score') or 1.0)
+                proc_risk = float(task.get('procrastination_risk') or 1.0)
                 reschedule_count = int(task.get('reschedule_count') or 0)
                 final_ns_score = ((hours_left / est_dur) / (cog_score * proc_risk)) * (0.85 ** reschedule_count)
                 task['ns_score'] = final_ns_score

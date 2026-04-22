@@ -1,7 +1,6 @@
 import requests
 from PyQt6.QtCore import QObject, pyqtSignal, QThread
 
-# --- NEW REGISTER THREAD ---
 class RegisterThread(QThread):
     finished = pyqtSignal(bool, str)
 
@@ -13,7 +12,6 @@ class RegisterThread(QThread):
     def run(self):
         try:
             response = requests.post(self.api_url, json=self.user_data)
-            # 201 Created is the standard REST status for successful creation
             if response.status_code in (200, 201):
                 self.finished.emit(True, "Registration Successful!")
             else:
@@ -31,7 +29,7 @@ class FetchTasksThread(QThread):
     def __init__(self, api_url, headers=None):
         super().__init__()
         self.api_url = api_url
-        self.headers = headers or {} 
+        self.headers = headers or {}
 
     def run(self):
         try:
@@ -111,7 +109,7 @@ class DeleteTaskThread(QThread):
     def run(self):
         try:
             response = requests.delete(self.api_url, headers=self.headers)
-            if response.status_code in (200, 204): 
+            if response.status_code in (200, 204):
                 self.finished.emit(str(self.task_id), "")
             else:
                 self.finished.emit(str(self.task_id), f"Error {response.status_code}: {response.text}")
@@ -141,11 +139,10 @@ class APIClient(QObject):
     task_updated = pyqtSignal(dict)
     task_deleted = pyqtSignal(str)
     stats_fetched = pyqtSignal(dict)
-    
+
     login_successful = pyqtSignal(dict)
     login_failed = pyqtSignal(str)
 
-    # --- NEW REGISTRATION SIGNALS ---
     register_successful = pyqtSignal(str)
     register_failed = pyqtSignal(str)
 
@@ -153,7 +150,7 @@ class APIClient(QObject):
         super().__init__()
         self.base_url = base_url
         self.access_token = None
-        self.active_threads = [] 
+        self.active_threads = []
 
     def _track_thread(self, thread):
         self.active_threads = [t for t in self.active_threads if t.isRunning()]
@@ -164,12 +161,12 @@ class APIClient(QObject):
         if self.access_token:
             headers['Authorization'] = f'Bearer {self.access_token}'
         return headers
-        
+
     def login(self, email, password):
         thread = LoginThread(f"{self.base_url}/login/", {'email': email, 'password': password})
         thread.finished.connect(self._on_login_finished)
-        thread.start() 
-        self._track_thread(thread) 
+        thread.start()
+        self._track_thread(thread)
 
     def _on_login_finished(self, data, error):
         if error:
@@ -182,9 +179,8 @@ class APIClient(QObject):
             self.access_token = data.get('token')
             self.login_successful.emit(data)
 
-    # --- NEW REGISTRATION METHOD ---
     def register(self, name, email, password):
-        # We pass 'full_name' to match what Django expects
+
         data = {
             "full_name": name,
             "email": email,
@@ -203,7 +199,7 @@ class APIClient(QObject):
 
     def fetch_tasks(self):
         thread = FetchTasksThread(
-            f"{self.base_url}/tasks/", 
+            f"{self.base_url}/tasks/",
             headers=self.get_auth_headers()
         )
         thread.finished.connect(self._on_fetch_tasks_finished)
@@ -219,14 +215,14 @@ class APIClient(QObject):
 
     def create_task(self, task_data):
         thread = CreateTaskThread(
-            f"{self.base_url}/tasks/", 
+            f"{self.base_url}/tasks/",
             task_data,
             headers=self.get_auth_headers()
         )
         thread.finished.connect(self._on_task_created_finished)
         thread.start()
         self._track_thread(thread)
-        
+
     def _on_task_created_finished(self, task, error):
         if error:
             self.error_occurred.emit(error)
@@ -236,7 +232,7 @@ class APIClient(QObject):
 
     def update_task(self, task_id, task_data):
         thread = UpdateTaskThread(
-            f"{self.base_url}/tasks/{task_id}/", 
+            f"{self.base_url}/tasks/{task_id}/",
             task_data,
             headers=self.get_auth_headers()
         )
@@ -270,7 +266,7 @@ class APIClient(QObject):
 
     def fetch_stats(self):
         thread = FetchStatsThread(
-            f"{self.base_url}/tasks/stats/", 
+            f"{self.base_url}/tasks/stats/",
             headers=self.get_auth_headers()
         )
         thread.finished.connect(self._on_fetch_stats_finished)

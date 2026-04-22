@@ -12,11 +12,10 @@ class StatsCard(QFrame):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
 
-        # Icon placeholder (Circle with icon inside)
         icon_circle = QLabel()
         icon_circle.setFixedSize(40, 40)
         icon_circle.setStyleSheet(f"background-color: {status_color}15; border-radius: 20px; color: {status_color}; font-weight: bold; qproperty-alignment: AlignCenter;")
-        icon_circle.setText("•") # Replace with actual icon
+        icon_circle.setText("•")
 
         layout.addWidget(icon_circle)
         layout.addStretch()
@@ -28,8 +27,7 @@ class StatsCard(QFrame):
         title_label = QLabel(title)
         title_label.setObjectName("StatsTitle")
         layout.addWidget(title_label)
-        
-        # Add slight shadow
+
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(15)
         shadow.setColor(QColor(0, 0, 0, 10))

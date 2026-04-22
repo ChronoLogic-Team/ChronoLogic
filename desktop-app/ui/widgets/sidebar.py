@@ -14,29 +14,26 @@ class Sidebar(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
 
-        # 1. Logo Area
         logo_container = QWidget()
         logo_layout = QHBoxLayout(logo_container)
         logo_layout.setContentsMargins(20, 25, 20, 25)
-        
+
         logo_icon = QLabel("C")
         logo_icon.setStyleSheet("background-color: #5A4AD1; color: white; border-radius: 8px; font-weight: bold; font-size: 18px; padding: 5px 10px;")
         logo_text = QLabel("ChronoLogic")
         logo_text.setStyleSheet("font-size: 18px; font-weight: bold; color: #333; margin-left: 8px;")
-        
+
         logo_layout.addWidget(logo_icon)
         logo_layout.addWidget(logo_text)
         logo_layout.addStretch()
         layout.addWidget(logo_container)
 
-        # 2. Main Navigation (Cleaned up!)
         self.add_nav_button(layout, "Dashboard", "assets/icons/dashboard.svg", checked=True)
-        # THE FIX: Changed from "Timeline" to "Execution Plan"
+
         self.add_nav_button(layout, "Execution Plan", "assets/icons/timeline.svg")
 
         layout.addSpacing(20)
 
-        # 3. "MY WORKSPACES" Section
         projects_label = QLabel("MY WORKSPACES")
         projects_label.setStyleSheet("""
             color: #9CA3AF;
@@ -60,38 +57,29 @@ class Sidebar(QWidget):
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
         layout.addWidget(btn)
 
-    def add_project_item(self, layout, text, color_hex):
-        # Create a perfectly smooth colored circle for the icon
-        size = 8
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.GlobalColor.transparent)
-        painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setBrush(QColor(color_hex))
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawEllipse(0, 0, size, size)
-        painter.end()
+    def add_project_item(self, layout, name, color):
+        from PyQt6.QtWidgets import QPushButton
+        from PyQt6.QtCore import Qt
         
-        btn = QPushButton(f" {text}")
-        btn.setIcon(QIcon(pixmap))
-        btn.setIconSize(QSize(size, size))
+        btn = QPushButton(f"  {name}")
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
         
+        # FIX: Ensure the entire stylesheet is wrapped in f""" ... """
         btn.setStyleSheet(f"""
             QPushButton {{
                 text-align: left;
-                padding: 10px 15px 10px 20px;
-                margin: 2px 10px;
-                border-radius: 8px;
+                padding: 8px 10px;
+                border: none;
+                border-radius: 6px;
+                background-color: transparent;
                 color: #6B7280;
                 font-size: 13px;
                 font-weight: 500;
-                background-color: transparent;
-                border: none;
             }}
             QPushButton:hover {{
-                background-color: {color_hex}1A;
+                background-color: #F3F4F6;
                 color: #111827;
             }}
         """)
+        
         layout.addWidget(btn)

@@ -7,14 +7,14 @@ from ui.views.dashboard_page import DashboardPage
 from ui.views.execution_views import ExecutionView
 
 class MainWindow(QMainWindow):
-    def __init__(self, api_client): 
+    def __init__(self, api_client):
         super().__init__()
         self.setWindowTitle("ChronoLogic")
         self.setGeometry(100, 100, 1280, 800)
-        self.api_client = api_client 
+        self.api_client = api_client
         self.overdue_task_titles = []
         self.load_styles()
-        self.setup_ui() 
+        self.setup_ui()
         self.api_client.stats_fetched.connect(self.dashboard_page.update_stats)
         self.api_client.tasks_fetched.connect(self.on_tasks_fetched)
         self.api_client.error_occurred.connect(self.on_api_error)
@@ -74,11 +74,11 @@ class MainWindow(QMainWindow):
         top_bar.addWidget(page_title)
         top_bar.addStretch()
         top_bar.addWidget(search_input)
-        top_bar.addWidget(self.notif_btn) 
+        top_bar.addWidget(self.notif_btn)
         top_bar.addWidget(new_task_btn)
         layout.addLayout(top_bar)
 
-    def connect_sidebar(self):    
+    def connect_sidebar(self):
         buttons = self.sidebar.findChildren(QPushButton, "SidebarButton")
         for btn in buttons:
             if btn.text() == "Dashboard":
@@ -107,7 +107,7 @@ class MainWindow(QMainWindow):
             self.execution_page.update_tasks(tasks)
         from datetime import datetime, timezone
         overdue_count = 0
-        self.overdue_task_titles = [] 
+        self.overdue_task_titles = []
         now_utc = datetime.now(timezone.utc)
         for task in tasks:
             dl_str = task.get('dead_line', '')
@@ -142,7 +142,7 @@ class MainWindow(QMainWindow):
         if dialog.exec():
             task_data = dialog.get_task_data()
             self.api_client.create_task(task_data)
-            
+
     def open_edit_task_dialog(self, task_data):
         from ui.widgets.new_task_dialog import NewTaskDialog
         dialog = NewTaskDialog(self, task_data=task_data)
@@ -151,11 +151,11 @@ class MainWindow(QMainWindow):
             task_id = updated_data.pop("id", None)
             if task_id:
                 self.api_client.update_task(task_id, updated_data)
-            
+
     def on_task_created(self, task):
         print("Task created successfully:", task.get("title"))
         self.api_client.fetch_tasks()
-        
+
     def on_task_updated(self, task):
         print("Task updated successfully:", task.get("title"))
         self.api_client.fetch_tasks()
