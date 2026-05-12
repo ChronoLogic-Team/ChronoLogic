@@ -1,9 +1,7 @@
 #  ChronoLogic — Neuro-Symbolic AI Productivity & Task Scheduling System
 
 <p align="center">
-  <img src="docs/banner.png" width="100%"/>
 </p>
-
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.x-blue?style=for-the-badge"/>
   <img src="https://img.shields.io/badge/PyQt6-Desktop_UI-green?style=for-the-badge"/>
