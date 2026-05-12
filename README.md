@@ -343,7 +343,7 @@ If you found this project useful or interesting:
 
 ---
 
-# 📬 Contact
+# Contact
 
 ## Waliur Rahman
 
