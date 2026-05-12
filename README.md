@@ -12,7 +12,7 @@
 
 ---
 
-# 🚀Overview
+# Overview
 
 ChronoLogic is an AI-powered productivity management system that combines:
 
